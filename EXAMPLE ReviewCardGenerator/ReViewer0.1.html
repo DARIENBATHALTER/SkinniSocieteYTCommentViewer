@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Re-Viewer</title>
+    <!-- Add FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+                        "Helvetica Neue", Arial, sans-serif;
+            background-color: #F2F2F7;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        /* Container Styles */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .title-section {
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .title-row i {
+            color: #007AFF;
+            font-size: 1.75rem;
+        }
+
+        .title-row h1 {
+            font-size: 1.75rem;
+            color: #1C1C1E;
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #1C1C1E;
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        .copyright {
+            font-size: 0.8rem;
+            color: #6C6C70;
+            margin-top: 0.25rem;
+        }
+
+        .file-input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            max-width: 100%;
+        }
+
+        .file-input-container input[type="file"] {
+            display: none;
+        }
+
+        .file-input-label {
+            padding: 0.75rem 1.5rem;
+            background-color: #007AFF;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            width: fit-content;
+        }
+
+        .file-input-label:hover {
+            background-color: #0056b3;
+        }
+
+        .file-name {
+            color: #6C6C70;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            word-break: break-all;
+            max-width: 100%;
+            padding: 0 1rem;
+        }
+
+        /* Reviews List */
+        .reviews-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .review-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .review-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1C1C1E;
+            flex: 1;
+        }
+
+        .author-date-block {
+            text-align: right;
+            flex-shrink: 0;
+            margin-left: 1rem;
+        }
+
+        .author-date {
+            font-size: 0.85rem;
+            color: #6C6C70;
+            line-height: 1.4;
+        }
+
+        .review-stars {
+            color: #FFB800;
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+            letter-spacing: 1px;
+        }
+
+        .review-content {
+            color: #1C1C1E;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            white-space: pre-line;
+        }
+
+        /* Loading State */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            color: #6C6C70;
+        }
+
+        /* Error State */
+        .error {
+            color: #FF3B30;
+            text-align: center;
+            padding: 1rem;
+            display: none;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 480px) {
+            body {
+                padding: 0.75rem;
+            }
+
+            .review-card {
+                padding: 1rem;
+            }
+
+            .review-title {
+                font-size: 1rem;
+            }
+
+            .author-date {
+                font-size: 0.8rem;
+            }
+
+            .title-row i {
+                font-size: 1.5rem;
+            }
+
+            .title-row h1 {
+                font-size: 1.5rem;
+            }
+
+            .subtitle {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <section class="upload-section">
+            <div class="title-section">
+                <div class="title-row">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <h1>Re-Viewer</h1>
+                </div>
+                <div class="subtitle">CSV Review Visualization Tool</div>
+                <div class="copyright">&copy; 2025 Darien Bathalter</div>
+            </div>
+            <div class="file-input-container">
+                <label class="file-input-label">
+                    Choose CSV File
+                    <input type="file" id="csvFile" accept=".csv">
+                </label>
+                <div class="file-name" id="fileName">No file selected</div>
+            </div>
+        </section>
+
+        <div class="loading" id="loading">Processing reviews...</div>
+        <div class="error" id="error"></div>
+        <div class="reviews-container" id="reviewsContainer"></div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('csvFile');
+        const fileName = document.getElementById('fileName');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const reviewsContainer = document.getElementById('reviewsContainer');
+
+        // Event Listeners
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // File Selection Handler
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            fileName.textContent = file.name;
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            reviewsContainer.innerHTML = '';
+
+            const reader = new FileReader();
+            reader.onload = handleFileLoad;
+            reader.onerror = () => {
+                error.textContent = 'Error reading file';
+                error.style.display = 'block';
+                loading.style.display = 'none';
+            };
+            reader.readAsText(file);
+        }
+
+        // File Load Handler
+        function handleFileLoad(event) {
+            try {
+                const csvText = event.target.result;
+                const rows = parseCSV(csvText);
+                
+                // Remove header row
+                rows.shift();
+
+                // Process and display reviews
+                rows.forEach(columns => {
+                    if (columns.length >= 5) {
+                        createReviewCard(...columns);
+                    }
+                });
+            } catch (err) {
+                error.textContent = 'Error processing CSV: ' + err.message;
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Parse CSV content
+        function parseCSV(text) {
+            const rows = [];
+            let p = 0;
+            let row = [];
+            let field = '';
+            let inQuotes = false;
+
+            function pushField() {
+                row.push(field.trim());
+                field = '';
+            }
+
+            function pushRow() {
+                if (row.length > 0) {
+                    rows.push(row);
+                    row = [];
+                }
+            }
+
+            while (p < text.length) {
+                let char = text[p];
+                p++;
+
+                // Handle quotes
+                if (char === '"') {
+                    if (inQuotes && text[p] === '"') { // double quotes
+                        field += '"';
+                        p++;
+                    } else { // start/end quotes
+                        inQuotes = !inQuotes;
+                    }
+                    continue;
+                }
+
+                // Handle line breaks
+                if (char === '\r') {
+                    if (text[p] === '\n') { // Windows line ending
+                        p++;
+                    }
+                    if (!inQuotes) {
+                        pushField();
+                        pushRow();
+                    } else {
+                        field += '\n';
+                    }
+                    continue;
+                }
+                if (char === '\n') {
+                    if (!inQuotes) {
+                        pushField();
+                        pushRow();
+                    } else {
+                        field += '\n';
+                    }
+                    continue;
+                }
+
+                // Handle commas
+                if (char === ',' && !inQuotes) {
+                    pushField();
+                    continue;
+                }
+
+                // Add character to field
+                field += char;
+            }
+
+            // Handle last field/row
+            pushField();
+            pushRow();
+
+            return rows;
+        }
+
+        // Create Review Card
+        function createReviewCard(title, author, date, rating, content) {
+            const stars = parseInt(rating) || 0;
+            const reviewCard = document.createElement('div');
+            reviewCard.className = 'review-card';
+            
+            // Clean up content - normalize line breaks and remove extra whitespace
+            content = content.replace(/[\r\n]+/g, '\n').trim();
+            
+            reviewCard.innerHTML = `
+                <div class="review-header">
+                    <div class="review-title">${escapeHtml(title)}</div>
+                    <div class="author-date-block">
+                        <div class="author-date">${escapeHtml(date)}</div>
+                        <div class="author-date">${escapeHtml(author)}</div>
+                    </div>
+                </div>
+                <div class="review-stars">${'★'.repeat(Math.min(5, stars))}</div>
+                <div class="review-content">${escapeHtml(content)}</div>
+            `;
+
+            reviewsContainer.appendChild(reviewCard);
+        }
+
+        // HTML Escape Helper
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

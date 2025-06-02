@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Medium YouTube Comment Explorer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            padding-top: 0;
+            background-color: #f8f9fa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        .titlebar {
+            background-color: #343a40;
+            color: white;
+            padding: 17px 0;
+            margin-bottom: 45px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .titlebar h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+        .titlebar .medical-symbol {
+            font-size: 2.8rem;
+            margin-right: 10px;
+            color: #FFD700;
+        }
+        .video-card {
+            transition: transform 0.3s;
+            cursor: pointer;
+            height: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        .comment-card {
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .reply-card {
+            margin-left: 30px;
+            margin-top: 10px;
+            border-left: 3px solid #1a73e8;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .comment-text {
+            white-space: pre-line;
+        }
+        .comment-author {
+            font-weight: bold;
+            color: #1a73e8;
+        }
+        .channel-owner-liked {
+            color: #FF0000;
+            margin-left: 5px;
+        }
+        .comment-date {
+            color: #70757a;
+            font-size: 0.9rem;
+        }
+        .video-title {
+            height: 48px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .video-stats {
+            font-size: 0.9rem;
+            color: #606060;
+        }
+        .spinner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+        .back-button {
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        #commentSection {
+            display: none;
+        }
+        .page-link {
+            cursor: pointer;
+        }
+        .video-thumbnail {
+            position: relative;
+        }
+        .video-duration {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-size: 0.8rem;
+        }
+        .video-date {
+            font-size: 0.9rem;
+            color: #606060;
+        }
+        #searchForm {
+            margin-bottom: 20px;
+        }
+        .filter-button {
+            margin-bottom: 15px;
+        }
+        #filterPanel {
+            display: block;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .btn-primary {
+            background-color: #1a73e8;
+            border-color: #1a73e8;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0b5ed7;
+        }
+        .btn-outline-primary {
+            color: #1a73e8;
+            border-color: #1a73e8;
+        }
+        .btn-outline-primary:hover {
+            background-color: #1a73e8;
+            border-color: #1a73e8;
+        }
+        .btn {
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .export-btn {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+        .export-progress {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            z-index: 1050;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 16px;
+            display: none;
+        }
+        .export-progress .progress {
+            height: 8px;
+            margin-bottom: 8px;
+        }
+        .export-progress .progress-text {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+            min-height: 20px;
+        }
+        .dual-progress .progress {
+            margin-bottom: 4px;
+        }
+        .dual-progress .progress:last-child {
+            margin-bottom: 8px;
+        }
+        .export-success {
+            color: #28a745;
+            font-weight: 500;
+        }
+        .export-error {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        .close-progress {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #666;
+            cursor: pointer;
+        }
+        .btn-update {
+            background-color: #0056b3;
+            border-color: #0056b3;
+            color: white;
+        }
+        .btn-update:hover {
+            background-color: #003d82;
+            border-color: #003d82;
+            color: white;
+        }
+        .btn-update:focus {
+            background-color: #003d82;
+            border-color: #003d82;
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(0, 86, 179, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <div class="titlebar">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1><i class="bi bi-play-fill medical-symbol"></i> Medical Medium YouTube Comment Explorer</h1>
+                <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                    <i class="bi bi-question-circle"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <main>
+            <!-- Video List Section -->
+            <div id="videoSection">
+                <div class="mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <h2>Videos</h2>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <label for="videoSortBy" class="form-label me-2 mb-0" style="min-width: 60px;">Sort by:</label>
+                                <select class="form-select me-2" id="videoSortBy" onchange="applyVideoSort()">
+                                    <option value="published_at">Date uploaded</option>
+                                    <option value="view_count">View count</option>
+                                    <option value="comment_count">Comment count</option>
+                                </select>
+                                <select class="form-select" id="videoSortOrder" onchange="applyVideoSort()">
+                                    <option value="desc">Descending</option>
+                                    <option value="asc">Ascending</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-5 text-end">
+                            <div class="input-group">
+                                <input type="text" id="videoSearch" class="form-control" placeholder="Search videos...">
+                                <button class="btn btn-outline-secondary" type="button" id="videoSearchBtn">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12 text-end">
+                            <button class="btn btn-update me-2" onclick="startScraping()" id="scrapeBtn">
+                                <i class="fas fa-sync-alt"></i> Fetch New Videos / Comments
+                            </button>
+                            <button class="btn btn-success" onclick="exportAllChannelComments()">
+                                <i class="bi bi-download"></i> Export All Channel Comments
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Grid -->
+                <div id="videoGrid" class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                    <!-- Videos will be loaded here -->
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="videoLoadingSpinner" class="spinner-container">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <nav id="videoPagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <!-- Pagination will be generated here -->
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Comment Section -->
+            <div id="commentSection">
+                <div class="back-button" onclick="showVideoList()">
+                    <i class="bi bi-arrow-left"></i> Back to Videos
+                </div>
+
+                <div id="selectedVideo" class="mb-4">
+                    <!-- Selected video details will be shown here -->
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h2>Comments</h2>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-success me-2" onclick="exportVideoComments()">
+                            <i class="bi bi-download"></i> Export All Video Comments
+                        </button>
+                        <button id="toggleFilterBtn" class="btn btn-outline-primary" onclick="toggleFilterPanel()">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Panel -->
+                <div id="filterPanel" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="commentSearch" class="form-label">Search in comments</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="commentSearch" placeholder="Enter keyword...">
+                                <button class="btn btn-outline-primary" type="button" onclick="applyFilters()">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="startDate" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="startDate">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="endDate" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hasRepliesFilter">
+                                <label class="form-check-label" for="hasRepliesFilter">
+                                    Show only comments with replies
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="sortByLikes" class="form-label">Sort comments by</label>
+                            <select class="form-select" id="sortByLikes">
+                                <option value="recent">Most recent first</option>
+                                <option value="desc" selected>Most likes first</option>
+                                <option value="asc">Least likes first</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset Filters</button>
+                    </div>
+                </div>
+
+                <!-- Comments List -->
+                <div id="commentsList">
+                    <!-- Comments will be loaded here -->
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="commentLoadingSpinner" class="spinner-container">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- Load More Button -->
+                <div class="text-center mt-4 mb-5">
+                    <button id="loadMoreBtn" class="btn btn-outline-primary" style="display: none;">
+                        Load More Comments
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center text-muted mt-5 pt-4 pb-4 border-top">
+            <p class="mb-0">&copy; 2023 Medical Medium YouTube Comment Explorer</p>
+        </footer>
+    </div>
+
+    <!-- Progress Tracking Toast -->
+    <div id="exportProgress" class="export-progress">
+        <button type="button" class="close-progress" onclick="closeProgressTracker()">&times;</button>
+        <div id="progressContent">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-download me-2"></i>
+                <strong id="progressTitle">Exporting Comments...</strong>
+            </div>
+            <div id="singleProgress" style="display: none;">
+                <div class="progress">
+                    <div id="singleProgressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="singleProgressText">Preparing...</div>
+            </div>
+            <div id="dualProgress" class="dual-progress" style="display: none;">
+                <div>
+                    <small class="text-muted">Overall Progress:</small>
+                    <div class="progress">
+                        <div id="videoProgressBar" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div>
+                    <small class="text-muted">Current Video:</small>
+                    <div class="progress">
+                        <div id="commentProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="progress-text" id="dualProgressText">Starting export...</div>
+            </div>
+            <div id="progressResult" style="display: none;">
+                <div id="resultMessage"></div>
+                <div id="downloadLinks" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scraping Progress Tooltip -->
+    <div id="scrapingProgress" class="export-progress" style="display: none; bottom: 120px;">
+        <button type="button" class="close-progress" onclick="closeScrapingTracker()">&times;</button>
+        <div id="scrapingContent">
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-sync-alt me-2"></i>
+                <strong id="scrapingTitle">Updating Comments...</strong>
+            </div>
+            <div id="scrapingStatus">
+                <div class="progress mb-2">
+                    <div id="scrapingProgressBar" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div class="progress-text mb-2" id="scrapingStatusText">Initializing...</div>
+                <div class="d-flex justify-content-between mb-2">
+                    <button class="btn btn-sm btn-danger" onclick="stopScraping()" id="stopScrapeBtn">
+                        <i class="bi bi-stop-fill"></i> Stop
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleScrapingLogs()" id="toggleLogsBtn">
+                        <i class="bi bi-terminal"></i> Show Logs
+                    </button>
+                </div>
+            </div>
+            <div id="scrapingLogs" style="display: none; max-height: 200px; overflow-y: auto; background: #f8f9fa; border-radius: 4px; padding: 8px; font-family: monospace; font-size: 0.8rem;">
+                <!-- Logs will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden area for rendering comments as PNG -->
+    <div id="commentRenderArea" style="position: absolute; left: -9999px; top: -9999px; background: white; width: 600px; padding: 20px; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;">
+        <!-- Comments will be rendered here temporarily for PNG export -->
+    </div>
+
+    <!-- About Modal -->
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="aboutModalLabel">About</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>YouTube Comment Explorer</strong><br>
+                    &copy; 2025 Darien Bathalter</p>
+                    
+                    <p><em>For bespoke data visualization tools...</em></p>
+                    
+                    <p><strong>Contact information:</strong><br>
+                    Email: <a href="mailto:me@darienbathalter.com">me@darienbathalter.com</a><br>
+                    Text / Voicemail: <a href="tel:+19045726183">(904) 572-6183</a></p>
+                    
+                    <p><em>Created with Ode</em></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentVideoId = null;
+        let commentsOffset = 0;
+        let commentsLimit = 100; // Increased from 50 to 100 for better UX
+        let totalComments = 0;
+        let currentFilters = {
+            search: '',
+            startDate: '',
+            endDate: '',
+            hasReplies: false,
+            sortByLikes: 'desc'
+        };
+        let videoSortSettings = {
+            sortBy: 'published_at',
+            sortOrder: 'desc'
+        };
+        let currentExportTask = null;
+
+        // Initialize the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVideos(1);
+
+            // Add event listeners
+            document.getElementById('videoSearchBtn').addEventListener('click', searchVideos);
+            document.getElementById('videoSearch').addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    searchVideos();
+                }
+            });
+
+            document.getElementById('commentSearch').addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+
+            document.getElementById('loadMoreBtn').addEventListener('click', loadMoreComments);
+            
+            // Initialize filters object with new properties
+            currentFilters = {
+                search: '',
+                startDate: '',
+                endDate: '',
+                hasReplies: false,
+                sortByLikes: 'desc'
+            };
+            
+            // Check if scraping is active
+            updateScrapingStatus();
+        });
+
+        // Load videos with pagination
+        function loadVideos(page, search = '') {
+            currentPage = page;
+            const loadingSpinner = document.getElementById('videoLoadingSpinner');
+            const videoGrid = document.getElementById('videoGrid');
+            
+            // Show loading spinner, hide videos
+            loadingSpinner.style.display = 'flex';
+            videoGrid.innerHTML = '';
+            
+            // Build URL with search parameter if provided
+            let url = `/api/videos?page=${page}`;
+            if (search) {
+                url += `&search=${encodeURIComponent(search)}`;
+            }
+            
+            // Add sorting parameters
+            url += `&sort_by=${videoSortSettings.sortBy}&sort_order=${videoSortSettings.sortOrder}`;
+            
+            console.log("Loading videos with URL:", url);
+            
+            // Fetch videos from API
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading spinner
+                    loadingSpinner.style.display = 'none';
+                    
+                    // Update pagination
+                    totalPages = data.pages;
+                    updatePagination();
+                    
+                    // Display videos
+                    if (data.videos.length === 0) {
+                        videoGrid.innerHTML = '<div class="col-12 text-center">No videos found</div>';
+                        return;
+                    }
+                    
+                    data.videos.forEach(video => {
+                        videoGrid.appendChild(createVideoCard(video));
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching videos:', error);
+                    loadingSpinner.style.display = 'none';
+                    videoGrid.innerHTML = '<div class="col-12 text-center text-danger">Error loading videos. Please try again.</div>';
+                });
+        }
+
+        // Create a video card element
+        function createVideoCard(video) {
+            const col = document.createElement('div');
+            col.className = 'col';
+            
+            const publishedDate = new Date(video.published_at);
+            const formattedDate = publishedDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
+            // Format numbers
+            const views = formatNumber(video.view_count);
+            const likes = formatNumber(video.like_count);
+            const comments = formatNumber(video.comment_count);
+            
+            col.innerHTML = `
+                <div class="card video-card" data-video-id="${video.video_id}">
+                    <div class="video-thumbnail">
+                        <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}">
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title video-title">${video.title}</h5>
+                        <p class="video-date">${formattedDate}</p>
+                        <p class="video-stats">
+                            <span><i class="bi bi-eye"></i> ${views}</span>
+                            <span class="ms-2"><i class="bi bi-hand-thumbs-up"></i> ${likes}</span>
+                            <span class="ms-2"><i class="bi bi-chat"></i> ${comments}</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            // Add click event to show comments
+            col.querySelector('.video-card').addEventListener('click', function() {
+                const videoId = this.getAttribute('data-video-id');
+                showComments(videoId);
+            });
+            
+            return col;
+        }
+
+        // Update pagination controls
+        function updatePagination() {
+            const pagination = document.getElementById('videoPagination');
+            const ul = pagination.querySelector('ul');
+            ul.innerHTML = '';
+            
+            // Previous button
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" ${currentPage > 1 ? 'onclick="loadVideos(' + (currentPage - 1) + ')"' : ''}>Previous</a>`;
+            ul.appendChild(prevLi);
+            
+            // Page numbers
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, startPage + 4);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const li = document.createElement('li');
+                li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                li.innerHTML = `<a class="page-link" onclick="loadVideos(${i})">${i}</a>`;
+                ul.appendChild(li);
+            }
+            
+            // Next button
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" ${currentPage < totalPages ? 'onclick="loadVideos(' + (currentPage + 1) + ')"' : ''}>Next</a>`;
+            ul.appendChild(nextLi);
+        }
+
+        // Search videos
+        function searchVideos() {
+            const searchInput = document.getElementById('videoSearch');
+            const searchTerm = searchInput.value.trim();
+            
+            // Keep the current sort settings when searching
+            loadVideos(1, searchTerm);
+        }
+
+        // Show comments for a selected video
+        function showComments(videoId) {
+            currentVideoId = videoId;
+            commentsOffset = 0;
+            
+            // Show comment section, hide video section
+            document.getElementById('videoSection').style.display = 'none';
+            document.getElementById('commentSection').style.display = 'block';
+            
+            // Reset filters first
+            document.getElementById('commentSearch').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('hasRepliesFilter').checked = false;
+            
+            // Set default sorting to most liked
+            document.getElementById('sortByLikes').value = 'desc';
+            
+            // Update current filters
+            currentFilters = {
+                search: '',
+                startDate: '',
+                endDate: '',
+                hasReplies: false,
+                sortByLikes: 'desc'
+            };
+            
+            // Show filter panel by default
+            document.getElementById('filterPanel').style.display = 'block';
+            
+            // Load video details
+            loadVideoDetails(videoId);
+            
+            // Load comments
+            loadComments(videoId);
+        }
+
+        // Load video details
+        function loadVideoDetails(videoId) {
+            fetch(`/api/videos/${videoId}`)
+                .then(response => response.json())
+                .then(video => {
+                    const selectedVideo = document.getElementById('selectedVideo');
+                    const publishedDate = new Date(video.published_at);
+                    const formattedDate = publishedDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                    
+                    selectedVideo.innerHTML = `
+                        <div class="card">
+                            <div class="row g-0">
+                                <div class="col-md-4">
+                                    <img src="${video.thumbnail}" class="img-fluid rounded-start" alt="${video.title}">
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card-body">
+                                        <h3 class="card-title">${video.title}</h3>
+                                        <p class="card-text video-date">${formattedDate}</p>
+                                        <p class="card-text">
+                                            <span><i class="bi bi-eye"></i> ${formatNumber(video.view_count)} views</span>
+                                            <span class="ms-3"><i class="bi bi-hand-thumbs-up"></i> ${formatNumber(video.like_count)} likes</span>
+                                            <span class="ms-3"><i class="bi bi-chat"></i> ${formatNumber(video.comment_count)} comments</span>
+                                        </p>
+                                        <a href="https://www.youtube.com/watch?v=${video.video_id}" class="btn btn-danger" target="_blank">
+                                            <i class="bi bi-youtube"></i> Watch on YouTube
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    console.error('Error fetching video details:', error);
+                    document.getElementById('selectedVideo').innerHTML = 
+                        '<div class="alert alert-danger">Error loading video details</div>';
+                });
+        }
+
+        // Load comments for a video
+        function loadComments(videoId, append = false) {
+            const loadingSpinner = document.getElementById('commentLoadingSpinner');
+            const commentsList = document.getElementById('commentsList');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            // Show loading spinner
+            loadingSpinner.style.display = 'flex';
+            if (!append) {
+                commentsList.innerHTML = '';
+                loadMoreBtn.style.display = 'none';
+            }
+            
+            // Build URL with filters
+            let url = `/api/videos/${videoId}/comments?offset=${commentsOffset}&limit=${commentsLimit}`;
+            if (currentFilters.search) {
+                url += `&search=${encodeURIComponent(currentFilters.search)}`;
+            }
+            if (currentFilters.startDate) {
+                url += `&start_date=${currentFilters.startDate}`;
+            }
+            if (currentFilters.endDate) {
+                url += `&end_date=${currentFilters.endDate}`;
+            }
+            if (currentFilters.hasReplies) {
+                url += `&has_replies=true`;
+            }
+            // Always include sort_by_likes parameter
+            url += `&sort_by_likes=${currentFilters.sortByLikes}`;
+            
+            // Include replies with the parent comments
+            url += `&include_replies=true`;
+            
+            console.log("Loading comments with URL:", url);
+            
+            // Fetch comments from API
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading spinner
+                    loadingSpinner.style.display = 'none';
+                    
+                    // Update total comments and display count in title
+                    totalComments = data.total;
+                    const commentsHeader = document.querySelector('#commentSection h2');
+                    if (commentsHeader) {
+                        commentsHeader.textContent = `Comments (${formatNumber(totalComments)})`;
+                    }
+                    
+                    // Display comments
+                    if (data.comments.length === 0 && !append) {
+                        commentsList.innerHTML = '<div class="alert alert-info">No comments found</div>';
+                        return;
+                    }
+                    
+                    data.comments.forEach(comment => {
+                        commentsList.appendChild(createCommentCard(comment));
+                    });
+                    
+                    // Debug: Check if any comments have replies
+                    let hasReplies = false;
+                    data.comments.forEach(comment => {
+                        if (comment.replies && comment.replies.length > 0) {
+                            hasReplies = true;
+                            console.log("Comment with replies:", comment);
+                        }
+                    });
+                    if (!hasReplies) {
+                        console.log("No comments with replies found in this batch");
+                    }
+                    
+                    // Update offset for pagination
+                    commentsOffset += data.comments.length;
+                    
+                    // Show/hide load more button
+                    if (commentsOffset < totalComments) {
+                        loadMoreBtn.style.display = 'inline-block';
+                    } else {
+                        loadMoreBtn.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching comments:', error);
+                    loadingSpinner.style.display = 'none';
+                    if (!append) {
+                        commentsList.innerHTML = 
+                            '<div class="alert alert-danger">Error loading comments</div>';
+                    }
+                });
+        }
+
+        // Create a comment card element
+        function createCommentCard(comment, isReply = false) {
+            const div = document.createElement('div');
+            div.className = isReply ? 'card comment-card reply-card' : 'card comment-card';
+            div.setAttribute('data-comment-id', comment.comment_id);
+            
+            const publishedDate = new Date(comment.published_at);
+            const formattedDate = publishedDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Create badges for replies
+            let badges = '';
+            if (comment.is_reply) {
+                badges += '<span class="ms-2 badge bg-secondary">Reply</span>';
+            }
+            if (comment.has_replies) {
+                badges += `<span class="ms-2 badge bg-info">${comment.reply_count} ${comment.reply_count === 1 ? 'Reply' : 'Replies'}</span>`;
+            }
+            
+            // Check if comment was liked by channel owner
+            let channelOwnerLiked = '';
+            if (comment.channel_owner_liked) {
+                channelOwnerLiked = '<i class="bi bi-heart-fill channel-owner-liked" title="Liked by channel owner"></i>';
+            }
+            
+            div.innerHTML = `
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <div class="comment-author">
+                            ${comment.author} ${channelOwnerLiked}
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="comment-date">${formattedDate}</div>
+                            <button class="btn btn-outline-primary btn-sm export-btn" onclick="exportSingleComment('${comment.comment_id}')">
+                                <i class="bi bi-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                    <p class="card-text comment-text">${comment.text}</p>
+                    <div class="text-muted">
+                        <i class="bi bi-hand-thumbs-up"></i> ${comment.like_count}
+                        ${badges}
+                    </div>
+                </div>
+            `;
+            
+            // Add replies if this comment has any
+            if (comment.replies && comment.replies.length > 0) {
+                const repliesContainer = document.createElement('div');
+                repliesContainer.className = 'replies-container';
+                
+                comment.replies.forEach(reply => {
+                    repliesContainer.appendChild(createCommentCard(reply, true));
+                });
+                
+                div.appendChild(repliesContainer);
+            }
+            
+            return div;
+        }
+
+        // Load more comments
+        function loadMoreComments() {
+            loadComments(currentVideoId, true);
+        }
+
+        // Show video list
+        function showVideoList() {
+            document.getElementById('commentSection').style.display = 'none';
+            document.getElementById('videoSection').style.display = 'block';
+        }
+
+        // Toggle filter panel
+        function toggleFilterPanel() {
+            const filterPanel = document.getElementById('filterPanel');
+            if (filterPanel.style.display === 'none') {
+                filterPanel.style.display = 'block';
+            } else {
+                filterPanel.style.display = 'none';
+            }
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const searchInput = document.getElementById('commentSearch');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const hasRepliesFilter = document.getElementById('hasRepliesFilter');
+            const sortByLikes = document.getElementById('sortByLikes');
+            
+            console.log("Selected sort option:", sortByLikes.value);
+            
+            currentFilters = {
+                search: searchInput.value.trim(),
+                startDate: startDateInput.value,
+                endDate: endDateInput.value,
+                hasReplies: hasRepliesFilter.checked,
+                sortByLikes: sortByLikes.value
+            };
+            
+            console.log("Applying filters:", currentFilters);
+            
+            // Reset offset and load comments with new filters
+            commentsOffset = 0;
+            loadComments(currentVideoId);
+        }
+
+        // Reset filters
+        function resetFilters() {
+            document.getElementById('commentSearch').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('hasRepliesFilter').checked = false;
+            document.getElementById('sortByLikes').value = 'recent';
+            
+            currentFilters = {
+                search: '',
+                startDate: '',
+                endDate: '',
+                hasReplies: false,
+                sortByLikes: 'recent'
+            };
+            
+            // If we're viewing comments, reload them
+            if (currentVideoId) {
+                commentsOffset = 0;
+                loadComments(currentVideoId);
+            }
+        }
+
+        // Format numbers with K, M suffixes
+        function formatNumber(num) {
+            if (num === null || num === undefined) {
+                return "0";
+            }
+            
+            num = parseInt(num);
+            if (num < 1000) {
+                return num.toString();
+            } else if (num < 1000000) {
+                return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+            } else {
+                return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+            }
+        }
+
+        // Apply video sorting
+        function applyVideoSort() {
+            const sortBy = document.getElementById('videoSortBy').value;
+            const sortOrder = document.getElementById('videoSortOrder').value;
+            
+            videoSortSettings = {
+                sortBy: sortBy,
+                sortOrder: sortOrder
+            };
+            
+            loadVideos(1);
+        }
+
+        // Export Functions - Client-side PNG generation
+        async function exportSingleComment(commentId) {
+            try {
+                showToast('Generating PNG...', 'info');
+                
+                // Fetch comment data from server
+                const response = await fetch(`/api/videos/comment-data/${commentId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch comment data');
+                }
+                
+                const comment = await response.json();
+                
+                // Generate PNG using client-side rendering
+                const filename = await generateCommentPNG(comment);
+                
+                showToast('Comment exported successfully!', 'success');
+            } catch (error) {
+                showToast('Failed to export comment', 'error');
+                console.error('Export error:', error);
+            }
+        }
+
+        async function generateCommentPNG(comment, videoTitle = '') {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const renderArea = document.getElementById('commentRenderArea');
+                    renderArea.innerHTML = '';
+                    
+                    // Generate filename with safe fallbacks
+                    const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '-');
+                    const videoTitlePart = sanitizeFilename(videoTitle || comment.video_title || 'unknown_video', 15);
+                    const safeAuthor = comment.author || '@unknown';
+                    const usernamePart = sanitizeFilename(safeAuthor.replace('@', ''), 10);
+                    const commentPart = sanitizeFilename(comment.text || 'no_text', 10);
+                    const filename = `${videoTitlePart}_${usernamePart}_${commentPart}_${timestamp}.png`;
+                    
+                    // Create comment HTML
+                    const commentHTML = generateCommentHTML(comment, videoTitle || comment.video_title);
+                    renderArea.innerHTML = commentHTML;
+                    
+                    // Make render area visible and properly positioned for html2canvas
+                    renderArea.style.position = 'fixed';
+                    renderArea.style.left = '50%';
+                    renderArea.style.top = '50%';
+                    renderArea.style.transform = 'translate(-50%, -50%)';
+                    renderArea.style.opacity = '1';
+                    renderArea.style.zIndex = '10000';
+                    renderArea.style.backgroundColor = '#ffffff';
+                    renderArea.style.border = 'none'; // No border
+                    renderArea.style.borderRadius = '8px';
+                    renderArea.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+                    
+                    // Wait for fonts and images to load
+                    await document.fonts.ready;
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 500ms
+                    
+                    // Generate PNG using html2canvas - capture only the inner content
+                    const canvas = await html2canvas(renderArea.firstElementChild, {
+                        useCORS: true,
+                        allowTaint: false,
+                        backgroundColor: '#ffffff',
+                        scale: 2,
+                        logging: false, // Disable logging
+                        windowWidth: 1200,
+                        windowHeight: 800
+                    });
+                    
+                    // Convert to PNG and download
+                    const imageURL = canvas.toDataURL('image/png', 1.0);
+                    const downloadLink = document.createElement('a');
+                    downloadLink.download = filename;
+                    downloadLink.href = imageURL;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    
+                    resolve(filename);
+                } catch (e) {
+                    console.error("Error generating PNG:", e);
+                    reject(e);
+                } finally {
+                    // Hide render area again
+                    setTimeout(() => {
+                        const renderArea = document.getElementById('commentRenderArea');
+                        renderArea.innerHTML = '';
+                        renderArea.style.position = 'absolute';
+                        renderArea.style.left = '-9999px';
+                        renderArea.style.top = '-9999px';
+                        renderArea.style.transform = 'none';
+                        renderArea.style.opacity = '1';
+                        renderArea.style.zIndex = 'auto';
+                        renderArea.style.backgroundColor = 'white';
+                        renderArea.style.border = 'none';
+                        renderArea.style.borderRadius = '0';
+                        renderArea.style.boxShadow = 'none';
+                    }, 100);
+                }
+            });
+        }
+
+        function generateCommentHTML(comment, videoTitle = '') {
+            // Performance optimization: cache color calculation
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F39C12'];
+            
+            // Safe handling of author field
+            const safeAuthor = comment.author || '@unknown';
+            const avatarColor = colors[hashString(safeAuthor) % colors.length];
+            
+            // Use 2nd character since 1st is always "@", with fallback handling
+            let firstLetter = 'U'; // Default fallback
+            if (safeAuthor && safeAuthor.length > 1) {
+                firstLetter = safeAuthor[1].toUpperCase();
+            } else if (safeAuthor && safeAuthor.length > 0) {
+                firstLetter = safeAuthor[0].toUpperCase();
+            }
+            
+            // Format date (cached Date object)
+            const publishedDate = new Date(comment.published_at);
+            const formattedDate = publishedDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
+            // Format like count efficiently
+            const likeCount = comment.like_count || 0;
+            const likeDisplay = likeCount >= 1000 ? `${(likeCount/1000).toFixed(1).replace('.0', '')}K` : likeCount.toString();
+            
+            // Channel owner liked indicator
+            const heartIcon = comment.channel_owner_liked ? '❤️' : '';
+            
+            // Pre-escape text content for performance (do it once)
+            const safeText = (comment.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();
+            const safeAuthorEscaped = safeAuthor.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const safeVideoTitle = videoTitle ? videoTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+            
+            // Return optimized HTML with minimal nested elements
+            return `<div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #ffffff; width: 560px; box-sizing: border-box;">
+<div style="display: flex; align-items: flex-start; gap: 12px; background-color: #ffffff;">
+<div style="width: 40px; height: 40px; border-radius: 50%; background-color: ${avatarColor}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: 500; flex-shrink: 0; transform: translateY(${safeVideoTitle ? '17px' : '2px'});">
+${firstLetter}
+</div>
+<div style="flex: 1; min-width: 0;">
+${safeVideoTitle ? `<div style="font-size: 11px; color: #606060; margin-bottom: 8px; font-style: italic;">from: ${safeVideoTitle}</div>` : ''}
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0px; line-height: 1.2;">
+<span style="font-size: 13px; font-weight: 500; color: #030303; line-height: 1.2; margin: 0; padding: 0;">${safeAuthorEscaped}</span>
+<span style="font-size: 12px; color: #606060; margin: 0; padding: 0;">${formattedDate}</span>
+</div>
+<div style="font-size: 14px; line-height: 1.4; color: #030303; margin-top: 0px; margin-bottom: 8px; padding-top: 0px; white-space: pre-wrap; word-wrap: break-word;">
+${safeText}
+</div>
+<div style="display: flex; align-items: center; gap: 8px;">
+<div style="display: flex; align-items: center; gap: 6px; color: #606060; font-size: 12px; font-weight: 500;">
+<svg style="width: 16px; height: 16px; fill: none; stroke: #606060; stroke-width: 1.5;" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-.971A6.001 6.001 0 016.633 10.5z"/>
+</svg>
+${likeDisplay}
+</div>
+${heartIcon ? `<span style="margin-left: 8px; font-size: 14px;">${heartIcon}</span>` : ''}
+</div>
+</div>
+</div>
+</div>`;
+        }
+
+        function sanitizeFilename(text, maxLength = 50) {
+            if (!text || typeof text !== 'string') {
+                return 'unknown';
+            }
+            return text.replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, ' ').trim().substring(0, maxLength) || 'unknown';
+        }
+
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            return Math.abs(hash);
+        }
+
+        // Optimized batch PNG generation - process multiple comments at once
+        async function generateBatchCommentPNGs(comments, videoTitle = '', batchSize = 10) {
+            const results = [];
+            
+            for (let i = 0; i < comments.length; i += batchSize) {
+                const batch = comments.slice(i, i + batchSize);
+                const batchResults = await processBatchComments(batch, videoTitle);
+                results.push(...batchResults);
+                
+                // Update progress if callback exists
+                if (typeof updateBatchProgress === 'function') {
+                    updateBatchProgress(i + batch.length, comments.length);
+                }
+                
+                // Minimal delay and memory cleanup
+                await new Promise(resolve => setTimeout(resolve, 10));
+                if (i % 50 === 0) { // Force garbage collection every 50 batches
+                    if (window.gc) window.gc();
+                }
+            }
+            
+            return results;
+        }
+
+        async function processBatchComments(commentBatch, videoTitle) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const renderArea = document.getElementById('commentRenderArea');
+                    renderArea.innerHTML = '';
+                    
+                    // Create container for batch rendering
+                    const batchContainer = document.createElement('div');
+                    batchContainer.style.cssText = `
+                        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+                        background-color: #ffffff;
+                        width: 560px;
+                        padding: 0;
+                        margin: 0;
+                    `;
+                    
+                    const batchResults = [];
+                    const commentElements = [];
+                    
+                    // Generate HTML for all comments in batch
+                    commentBatch.forEach((comment, index) => {
+                        const commentDiv = document.createElement('div');
+                        commentDiv.style.cssText = `
+                            margin-bottom: ${index < commentBatch.length - 1 ? '20px' : '0px'};
+                            padding: 20px;
+                            box-sizing: border-box;
+                            background-color: #ffffff;
+                        `;
+                        commentDiv.innerHTML = generateCommentHTML(comment, videoTitle);
+                        
+                        batchContainer.appendChild(commentDiv);
+                        commentElements.push({
+                            element: commentDiv,
+                            comment: comment,
+                            index: index
+                        });
+                    });
+                    
+                    renderArea.appendChild(batchContainer);
+                    
+                    // Position for capture
+                    renderArea.style.position = 'fixed';
+                    renderArea.style.left = '50%';
+                    renderArea.style.top = '50%';
+                    renderArea.style.transform = 'translate(-50%, -50%)';
+                    renderArea.style.opacity = '1';
+                    renderArea.style.zIndex = '10000';
+                    renderArea.style.backgroundColor = '#ffffff';
+                    renderArea.style.border = 'none';
+                    renderArea.style.borderRadius = '8px';
+                    renderArea.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+                    
+                    // Wait for fonts and layout
+                    await document.fonts.ready;
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 300ms
+                    
+                    // Capture each comment individually from the batch
+                    for (let i = 0; i < commentElements.length; i++) {
+                        const { element, comment } = commentElements[i];
+                        
+                        try {
+                            // Capture individual comment
+                            const canvas = await html2canvas(element, {
+                                useCORS: true,
+                                allowTaint: false,
+                                backgroundColor: '#ffffff',
+                                scale: 2,
+                                logging: false,
+                                windowWidth: 1200,
+                                windowHeight: 800,
+                                width: 600,
+                                height: element.offsetHeight
+                            });
+                            
+                            // Generate filename
+                            const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '-');
+                            const videoTitlePart = sanitizeFilename(videoTitle || comment.video_title || 'unknown_video', 15);
+                            const safeAuthor = comment.author || '@unknown';
+                            const usernamePart = sanitizeFilename(safeAuthor.replace('@', ''), 10);
+                            const commentPart = sanitizeFilename(comment.text || 'no_text', 10);
+                            const filename = `${videoTitlePart}_${usernamePart}_${commentPart}_${timestamp}.png`;
+                            
+                            // Convert to blob
+                            const blob = await new Promise(resolve => {
+                                canvas.toBlob(resolve, 'image/png', 1.0);
+                            });
+                            
+                            batchResults.push({ blob, filename });
+                            
+                        } catch (error) {
+                            console.error(`Error processing comment in batch:`, error);
+                            // Continue with other comments in batch
+                        }
+                    }
+                    
+                    resolve(batchResults);
+                    
+                } catch (error) {
+                    console.error("Error in batch processing:", error);
+                    reject(error);
+                } finally {
+                    // Clean up render area
+                    const renderArea = document.getElementById('commentRenderArea');
+                    renderArea.innerHTML = '';
+                    renderArea.style.position = 'absolute';
+                    renderArea.style.left = '-9999px';
+                    renderArea.style.top = '-9999px';
+                    renderArea.style.transform = 'none';
+                    renderArea.style.opacity = '1';
+                    renderArea.style.zIndex = 'auto';
+                    renderArea.style.backgroundColor = 'white';
+                    renderArea.style.border = 'none';
+                    renderArea.style.borderRadius = '0';
+                    renderArea.style.boxShadow = 'none';
+                }
+            });
+        }
+
+        // Keep original function for single comment exports
+        async function generateCommentPNGBlob(comment, videoTitle = '') {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const renderArea = document.getElementById('commentRenderArea');
+                    renderArea.innerHTML = '';
+                    
+                    // Generate filename with safe fallbacks
+                    const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '-');
+                    const videoTitlePart = sanitizeFilename(videoTitle || comment.video_title || 'unknown_video', 15);
+                    const safeAuthor = comment.author || '@unknown';
+                    const usernamePart = sanitizeFilename(safeAuthor.replace('@', ''), 10);
+                    const commentPart = sanitizeFilename(comment.text || 'no_text', 10);
+                    const filename = `${videoTitlePart}_${usernamePart}_${commentPart}_${timestamp}.png`;
+                    
+                    // Create comment HTML
+                    const commentHTML = generateCommentHTML(comment, videoTitle || comment.video_title);
+                    renderArea.innerHTML = commentHTML;
+                    
+                    // Make render area visible and properly positioned for html2canvas
+                    renderArea.style.position = 'fixed';
+                    renderArea.style.left = '50%';
+                    renderArea.style.top = '50%';
+                    renderArea.style.transform = 'translate(-50%, -50%)';
+                    renderArea.style.opacity = '1';
+                    renderArea.style.zIndex = '10000';
+                    renderArea.style.backgroundColor = '#ffffff';
+                    renderArea.style.border = 'none'; // No border
+                    renderArea.style.borderRadius = '8px';
+                    renderArea.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+                    
+                    // Wait for fonts and images to load
+                    await document.fonts.ready;
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 500ms
+                    
+                    // Generate PNG using html2canvas - capture only the inner content
+                    const canvas = await html2canvas(renderArea.firstElementChild, {
+                        useCORS: true,
+                        allowTaint: false,
+                        backgroundColor: '#ffffff',
+                        scale: 2,
+                        logging: false, // Disable logging
+                        windowWidth: 1200,
+                        windowHeight: 800
+                    });
+                    
+                    // Convert to blob instead of downloading
+                    canvas.toBlob((blob) => {
+                        resolve({ blob, filename });
+                    }, 'image/png', 1.0);
+                    
+                } catch (e) {
+                    console.error("Error generating PNG blob:", e);
+                    reject(e);
+                } finally {
+                    // Hide render area again
+                    const renderArea = document.getElementById('commentRenderArea');
+                    renderArea.innerHTML = '';
+                    renderArea.style.position = 'absolute';
+                    renderArea.style.left = '-9999px';
+                    renderArea.style.top = '-9999px';
+                    renderArea.style.transform = 'none';
+                    renderArea.style.opacity = '1';
+                    renderArea.style.zIndex = 'auto';
+                    renderArea.style.backgroundColor = 'white';
+                    renderArea.style.border = 'none';
+                    renderArea.style.borderRadius = '0';
+                    renderArea.style.boxShadow = 'none';
+                }
+            });
+        }
+
+        async function exportVideoComments() {
+            if (!currentVideoId) {
+                showToast('No video selected', 'error');
+                return;
+            }
+
+            try {
+                showToast('Starting video export...', 'info');
+                showProgressTracker('video');
+                
+                // Get video title
+                const videoResponse = await fetch(`/api/videos/${currentVideoId}`);
+                const videoData = await videoResponse.json();
+                
+                // Fetch ALL comments for the video with pagination
+                const comments = await fetchAllCommentsForVideo(currentVideoId);
+                
+                if (!comments || comments.length === 0) {
+                    showToast('No comments to export', 'error');
+                    closeProgressTracker();
+                    return;
+                }
+                
+                console.log(`Starting optimized export of ${comments.length} comments for video: ${videoData.title}`);
+                
+                // Set up global progress tracking for chunked export
+                window.currentProgressData = {
+                    status: 'processing',
+                    progress: 0,
+                    total: comments.length
+                };
+                
+                // Create chunked ZIP files using optimized processing (1000 comments per ZIP)
+                const zipFiles = await createChunkedZipFiles(comments, videoData.title, 1000);
+                
+                // Download all ZIP files
+                for (let i = 0; i < zipFiles.length; i++) {
+                    const { blob, filename, commentCount } = zipFiles[i];
+                    
+                    const downloadLink = document.createElement('a');
+                    downloadLink.download = filename;
+                    downloadLink.href = URL.createObjectURL(blob);
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    URL.revokeObjectURL(downloadLink.href);
+                    
+                    // Minimal delay between downloads
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                showExportComplete('bulk', { total: comments.length, files: zipFiles.length });
+                
+                let message = `Successfully exported ${comments.length} comments`;
+                if (zipFiles.length > 1) {
+                    message += ` in ${zipFiles.length} ZIP files`;
+                }
+                message += ` (Optimized Processing!)`;
+                showToast(message, 'success');
+                
+            } catch (error) {
+                showExportError(error.message);
+                console.error('Video export error:', error);
+            }
+        }
+
+        // Helper function to fetch ALL comments for a video with pagination
+        async function fetchAllCommentsForVideo(videoId) {
+            let allComments = [];
+            let offset = 0;
+            const limit = 100; // Fetch in batches of 100
+            let hasMore = true;
+            
+            while (hasMore) {
+                const response = await fetch(`/api/videos/${videoId}/comments?offset=${offset}&limit=${limit}&include_replies=true`);
+                const data = await response.json();
+                
+                if (data.comments && data.comments.length > 0) {
+                    // Flatten the comment structure: include both parent and reply comments
+                    for (const comment of data.comments) {
+                        // Add the parent comment
+                        allComments.push(comment);
+                        
+                        // Add all reply comments as separate items
+                        if (comment.replies && comment.replies.length > 0) {
+                            for (const reply of comment.replies) {
+                                allComments.push(reply);
+                            }
+                        }
+                    }
+                    
+                    offset += data.comments.length;
+                    hasMore = data.comments.length === limit; // Continue if we got a full batch
+                } else {
+                    hasMore = false;
+                }
+                
+                // Small delay to prevent overwhelming the server
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            console.log(`Fetched ${allComments.length} total comments (including replies) for video ${videoId}`);
+            return allComments;
+        }
+
+        // Helper function to create chunked ZIP files for large comment sets - OPTIMIZED
+        async function createChunkedZipFiles(comments, videoTitle, maxCommentsPerZip = 1000) {  // Increased from 500 to 1000
+            const chunks = [];
+            for (let i = 0; i < comments.length; i += maxCommentsPerZip) {
+                chunks.push(comments.slice(i, i + maxCommentsPerZip));
+            }
+            
+            const zipFiles = [];
+            
+            for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+                const chunk = chunks[chunkIndex];
+                const zip = new JSZip();
+                
+                console.log(`Processing chunk ${chunkIndex + 1}/${chunks.length} with ${chunk.length} comments`);
+                
+                try {
+                    // Use batch processing instead of individual comment processing
+                    const batchSize = 15; // Process 15 comments at once for optimal speed/memory balance
+                    
+                    // Set up progress callback for this chunk
+                    window.updateBatchProgress = (processed, total) => {
+                        if (window.currentProgressData) {
+                            const totalProcessed = (chunkIndex * maxCommentsPerZip) + processed;
+                            window.currentProgressData.progress = totalProcessed;
+                            window.currentProgressData.current_item = `Chunk ${chunkIndex + 1}/${chunks.length}: ${processed}/${total} (Batch Processing)`;
+                            if (typeof updateProgressBars === 'function') {
+                                updateProgressBars(window.currentProgressData);
+                            }
+                        }
+                    };
+                    
+                    // Generate all PNGs for this chunk using batch processing
+                    const pngResults = await generateBatchCommentPNGs(chunk, videoTitle, batchSize);
+                    
+                    // Add successful PNGs to ZIP
+                    let successCount = 0;
+                    for (const result of pngResults) {
+                        if (result && result.blob && result.filename) {
+                            zip.file(result.filename, result.blob);
+                            successCount++;
+                        }
+                    }
+                    
+                    console.log(`Chunk ${chunkIndex + 1}: ${successCount}/${chunk.length} comments processed successfully`);
+                    
+                    if (successCount > 0) {
+                        // Generate ZIP filename with part number if multiple chunks
+                        const timestamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '-');
+                        const safeVideoTitle = sanitizeFilename(videoTitle, 30);
+                        let zipFilename;
+                        
+                        if (chunks.length > 1) {
+                            const partNumber = (chunkIndex + 1).toString().padStart(2, '0');
+                            zipFilename = `${safeVideoTitle}_CommentExport_part_${partNumber}_${timestamp}.zip`;
+                        } else {
+                            zipFilename = `${safeVideoTitle}_CommentExport_${timestamp}.zip`;
+                        }
+                        
+                        const zipBlob = await zip.generateAsync({ 
+                            type: 'blob',
+                            compression: 'DEFLATE',
+                            compressionOptions: { level: 6 } // Balanced compression for speed
+                        });
+                        zipFiles.push({ blob: zipBlob, filename: zipFilename, commentCount: successCount });
+                    }
+                    
+                } catch (error) {
+                    console.error(`Error processing chunk ${chunkIndex + 1}:`, error);
+                    // Continue with next chunk
+                }
+                
+                // Minimal delay between chunks and force garbage collection
+                await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from longer delays
+                if (window.gc) window.gc(); // Force garbage collection if available
+            }
+            
+            return zipFiles;
+        }
+
+        async function exportAllChannelComments() {
+            try {
+                showToast('Starting channel export...', 'info');
+                showProgressTracker('channel');
+                
+                // Fetch all videos in the channel
+                let allVideos = [];
+                let page = 1;
+                let hasMore = true;
+                
+                // Get all videos by paginating through them
+                while (hasMore) {
+                    const response = await fetch(`/api/videos?page=${page}&limit=100`);
+                    const data = await response.json();
+                    
+                    if (data.videos && data.videos.length > 0) {
+                        allVideos = allVideos.concat(data.videos);
+                        page++;
+                        hasMore = page <= data.pages;
+                    } else {
+                        hasMore = false;
+                    }
+                }
+                
+                if (allVideos.length === 0) {
+                    showToast('No videos found to export', 'error');
+                    closeProgressTracker();
+                    return;
+                }
+                
+                // Initialize progress tracking for dual progress bars
+                const channelProgressData = {
+                    status: 'processing',
+                    video_progress: 0,
+                    video_total: allVideos.length,
+                    comment_progress: 0,
+                    comment_total: 0,
+                    current_video: '',
+                    overall_percent: 0,
+                    current_percent: 0
+                };
+                updateProgressBars(channelProgressData);
+                
+                let totalSuccessfulVideos = 0;
+                let totalSkippedVideos = 0;
+                let totalCommentsExported = 0;
+                let totalZipFilesCreated = 0;
+                
+                // Process each video sequentially
+                for (let videoIndex = 0; videoIndex < allVideos.length; videoIndex++) {
+                    const video = allVideos[videoIndex];
+                    
+                    try {
+                        // Update overall video progress
+                        const overallPercent = ((videoIndex / allVideos.length) * 100).toFixed(1);
+                        channelProgressData.video_progress = videoIndex;
+                        channelProgressData.overall_percent = overallPercent;
+                        channelProgressData.comment_progress = 0;
+                        channelProgressData.comment_total = 0;
+                        channelProgressData.current_percent = 0;
+                        channelProgressData.current_video = video.title;
+                        channelProgressData.current_chunk = 0;
+                        channelProgressData.total_chunks = 0;
+                        updateProgressBars(channelProgressData);
+                        
+                        // Fetch ALL comments for this video with pagination
+                        const comments = await fetchAllCommentsForVideo(video.video_id);
+                        
+                        if (!comments || comments.length === 0) {
+                            console.log(`No comments found for video: ${video.title}`);
+                            totalSkippedVideos++;
+                            continue;
+                        }
+                        
+                        // Calculate chunks for this video
+                        const maxCommentsPerZip = 1000; // Increased from 500 for better performance
+                        const totalChunks = Math.ceil(comments.length / maxCommentsPerZip);
+                        
+                        // Update comment progress tracking
+                        channelProgressData.comment_total = comments.length;
+                        channelProgressData.total_chunks = totalChunks;
+                        
+                        // Use optimized createChunkedZipFiles function
+                        console.log(`Processing video "${video.title}" with ${comments.length} comments in ${totalChunks} chunks`);
+                        
+                        const zipFiles = await createChunkedZipFiles(comments, video.title, maxCommentsPerZip);
+                        
+                        // Download all ZIP files for this video
+                        for (let zipIndex = 0; zipIndex < zipFiles.length; zipIndex++) {
+                            const { blob, filename, commentCount } = zipFiles[zipIndex];
+                            
+                            // Download ZIP file
+                            const downloadLink = document.createElement('a');
+                            downloadLink.download = filename;
+                            downloadLink.href = URL.createObjectURL(blob);
+                            document.body.appendChild(downloadLink);
+                            downloadLink.click();
+                            document.body.removeChild(downloadLink);
+                            URL.revokeObjectURL(downloadLink.href);
+                            
+                            totalCommentsExported += commentCount;
+                            totalZipFilesCreated++;
+                            
+                            // Minimal delay between downloads
+                            await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 500ms
+                        }
+                        
+                        totalSuccessfulVideos++;
+                        console.log(`Successfully exported ${comments.length} comments from "${video.title}" in ${zipFiles.length} ZIP file(s)`);
+                        
+                    } catch (error) {
+                        console.error(`Error processing video "${video.title}":`, error);
+                        totalSkippedVideos++;
+                    }
+                    
+                    // Update overall video progress (completed)
+                    channelProgressData.video_progress = videoIndex + 1;
+                    const completedPercent = (((videoIndex + 1) / allVideos.length) * 100).toFixed(1);
+                    channelProgressData.overall_percent = completedPercent;
+                    updateProgressBars(channelProgressData);
+                }
+                
+                // Show completion summary
+                let summaryMessage = `Channel export completed!\n`;
+                summaryMessage += `• ${totalSuccessfulVideos} videos exported successfully\n`;
+                summaryMessage += `• ${totalCommentsExported} total comments exported\n`;
+                summaryMessage += `• ${totalZipFilesCreated} ZIP files created\n`;
+                if (totalSkippedVideos > 0) {
+                    summaryMessage += `• ${totalSkippedVideos} videos skipped (no comments or errors)`;
+                }
+                
+                showExportComplete('channel', { 
+                    total: totalSuccessfulVideos, 
+                    comments: totalCommentsExported,
+                    files: totalZipFilesCreated,
+                    skipped: totalSkippedVideos 
+                });
+                showToast(summaryMessage, 'success');
+                
+            } catch (error) {
+                showExportError(error.message);
+                console.error('Channel export error:', error);
+            }
+        }
+
+        function showProgressTracker(type) {
+            const progressDiv = document.getElementById('exportProgress');
+            const singleProgress = document.getElementById('singleProgress');
+            const dualProgress = document.getElementById('dualProgress');
+            const progressResult = document.getElementById('progressResult');
+            
+            // Reset display
+            singleProgress.style.display = 'none';
+            dualProgress.style.display = 'none';
+            progressResult.style.display = 'none';
+            
+            if (type === 'channel') {
+                dualProgress.style.display = 'block';
+                document.getElementById('progressTitle').textContent = 'Exporting All Channel Comments...';
+            } else {
+                singleProgress.style.display = 'block';
+                document.getElementById('progressTitle').textContent = 'Exporting Video Comments...';
+            }
+            
+            progressDiv.style.display = 'block';
+        }
+
+        function trackProgress(taskId) {
+            const checkProgress = () => {
+                fetch(`/api/export/progress/${taskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'processing') {
+                        updateProgressBars(data);
+                        setTimeout(checkProgress, 1000); // Check every second
+                    } else if (data.status === 'completed') {
+                        showExportComplete(taskId, data);
+                    } else if (data.status === 'failed') {
+                        showExportError(data.error || 'Export failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Progress check error:', error);
+                    setTimeout(checkProgress, 2000); // Retry in 2 seconds
+                });
+            };
+            
+            setTimeout(checkProgress, 500); // Start checking after 500ms
+        }
+
+        function updateProgressBars(data) {
+            if (data.video_total !== undefined) {
+                // Channel export with dual progress bars
+                const videoProgress = (data.video_progress / data.video_total) * 100;
+                document.getElementById('videoProgressBar').style.width = videoProgress + '%';
+                
+                if (data.comment_progress !== undefined && data.comment_total !== undefined) {
+                    const commentProgress = (data.comment_progress / data.comment_total) * 100;
+                    document.getElementById('commentProgressBar').style.width = commentProgress + '%';
+                }
+                
+                // Format the dual progress text more clearly
+                let overallText = `Overall Export Progress: ${data.video_progress}/${data.video_total} Videos`;
+                if (data.overall_percent !== undefined) {
+                    overallText += ` (${data.overall_percent}%)`;
+                }
+                
+                let currentText = '';
+                if (data.current_video) {
+                    currentText = `Current Video: "${data.current_video}"`;
+                    if (data.comment_total > 0) {
+                        currentText += ` (${data.comment_total} Total Comments)`;
+                        if (data.comment_progress > 0) {
+                            currentText += `\n${data.comment_progress}/${data.comment_total} Comments Processed`;
+                            if (data.total_chunks > 1) {
+                                currentText += ` (Chunk ${data.current_chunk}/${data.total_chunks})`;
+                            }
+                            if (data.current_percent !== undefined) {
+                                currentText += ` (${data.current_percent}%)`;
+                            }
+                        }
+                    }
+                }
+                
+                document.getElementById('dualProgressText').innerHTML = 
+                    `<div style="margin-bottom: 8px;">${overallText}</div><div>${currentText}</div>`;
+            } else {
+                // Single video export
+                const progress = (data.progress / data.total) * 100;
+                document.getElementById('singleProgressBar').style.width = progress + '%';
+                document.getElementById('singleProgressText').textContent = 
+                    data.current_item || `Processing ${data.progress}/${data.total} comments`;
+            }
+        }
+
+        function showExportComplete(taskId, data) {
+            document.getElementById('singleProgress').style.display = 'none';
+            document.getElementById('dualProgress').style.display = 'none';
+            
+            const resultDiv = document.getElementById('progressResult');
+            const messageDiv = document.getElementById('resultMessage');
+            const linksDiv = document.getElementById('downloadLinks');
+            
+            let message = '';
+            if (taskId === 'bulk') {
+                message = `<div class="export-success"><i class="bi bi-check-circle"></i> Successfully exported ${data.total} comments as PNG files!</div>`;
+            } else {
+                message = '<div class="export-success"><i class="bi bi-check-circle"></i> Export completed successfully!</div>';
+            }
+            
+            messageDiv.innerHTML = message;
+            
+            // No download button needed for client-side exports - files are already downloaded
+            linksDiv.innerHTML = '';
+            
+            resultDiv.style.display = 'block';
+        }
+
+        function showExportError(error) {
+            document.getElementById('singleProgress').style.display = 'none';
+            document.getElementById('dualProgress').style.display = 'none';
+            
+            const resultDiv = document.getElementById('progressResult');
+            const messageDiv = document.getElementById('resultMessage');
+            
+            messageDiv.innerHTML = `<div class="export-error"><i class="bi bi-exclamation-circle"></i> Export failed: ${error}</div>`;
+            resultDiv.style.display = 'block';
+        }
+
+        function downloadExport(taskId) {
+            window.location.href = `/api/export/download/${taskId}`;
+        }
+
+        function closeProgressTracker() {
+            document.getElementById('exportProgress').style.display = 'none';
+            currentExportTask = null;
+        }
+
+        function showToast(message, type = 'info') {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
+            toast.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        // Scraping functionality
+        let scrapingPolling = null;
+
+        async function startScraping() {
+            try {
+                const response = await fetch('/api/scraper/start', { method: 'POST' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast('Comment update started!', 'success');
+                    showScrapingTracker();
+                    startScrapingPolling();
+                    document.getElementById('scrapeBtn').disabled = true;
+                } else {
+                    showToast(data.error || 'Failed to start update', 'error');
+                }
+            } catch (error) {
+                showToast('Error starting update: ' + error.message, 'error');
+            }
+        }
+
+        async function stopScraping() {
+            try {
+                const response = await fetch('/api/scraper/stop', { method: 'POST' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast('Comment update stopped', 'info');
+                    stopScrapingPolling();
+                    document.getElementById('scrapeBtn').disabled = false;
+                } else {
+                    showToast(data.error || 'Failed to stop update', 'error');
+                }
+            } catch (error) {
+                showToast('Error stopping update: ' + error.message, 'error');
+            }
+        }
+
+        function showScrapingTracker() {
+            const scrapingDiv = document.getElementById('scrapingProgress');
+            scrapingDiv.style.display = 'block';
+        }
+
+        function closeScrapingTracker() {
+            const scrapingDiv = document.getElementById('scrapingProgress');
+            scrapingDiv.style.display = 'none';
+            stopScrapingPolling();
+            document.getElementById('scrapeBtn').disabled = false;
+        }
+
+        function toggleScrapingLogs() {
+            const logsDiv = document.getElementById('scrapingLogs');
+            const toggleBtn = document.getElementById('toggleLogsBtn');
+            
+            if (logsDiv.style.display === 'none') {
+                logsDiv.style.display = 'block';
+                toggleBtn.innerHTML = '<i class="bi bi-terminal"></i> Hide Logs';
+            } else {
+                logsDiv.style.display = 'none';
+                toggleBtn.innerHTML = '<i class="bi bi-terminal"></i> Show Logs';
+            }
+        }
+
+        function startScrapingPolling() {
+            scrapingPolling = setInterval(updateScrapingStatus, 2000); // Poll every 2 seconds
+            updateScrapingStatus(); // Initial update
+        }
+
+        function stopScrapingPolling() {
+            if (scrapingPolling) {
+                clearInterval(scrapingPolling);
+                scrapingPolling = null;
+            }
+        }
+
+        async function updateScrapingStatus() {
+            try {
+                const response = await fetch('/api/scraper/status');
+                const status = await response.json();
+                
+                // Update progress bar
+                const progressBar = document.getElementById('scrapingProgressBar');
+                const statusText = document.getElementById('scrapingStatusText');
+                
+                if (status.active) {
+                    const progress = status.progress || 0;
+                    progressBar.style.width = progress + '%';
+                    progressBar.className = 'progress-bar bg-info';
+                    
+                    // Enhanced status text with percentages and counts
+                    let statusDisplay = status.current_task || 'Processing...';
+                    
+                    // Add percentage if we have progress data
+                    if (status.total && status.current_video) {
+                        statusDisplay = `${status.current_video}/${status.total} videos with new comments (${progress}%)`;
+                        if (status.current_task && status.current_task.includes('video')) {
+                            statusDisplay += `\n${status.current_task}`;
+                        }
+                    } else if (status.current_task) {
+                        statusDisplay = status.current_task;
+                    }
+                    
+                    statusText.innerHTML = statusDisplay.replace(/\n/g, '<br>');
+                } else {
+                    // Scraping finished
+                    stopScrapingPolling();
+                    document.getElementById('scrapeBtn').disabled = false;
+                    
+                    if (status.error) {
+                        progressBar.style.width = '100%';
+                        progressBar.className = 'progress-bar bg-danger';
+                        statusText.textContent = status.current_task || 'Update failed';
+                        // Only show error toast if we were actively polling
+                        if (scrapingPolling) {
+                            showToast('Update failed: ' + status.error, 'error');
+                        }
+                    } else {
+                        progressBar.style.width = '100%';
+                        progressBar.className = 'progress-bar bg-success';
+                        statusText.innerHTML = status.current_task || 'Update completed!';
+                        // Only show success toast if we were actively polling (not on page load)
+                        if (scrapingPolling) {
+                            showToast('Comment update completed successfully!', 'success');
+                        }
+                        
+                        // Refresh the video list to show new content only if we were polling
+                        if (scrapingPolling) {
+                            setTimeout(() => {
+                                loadVideos(currentPage);
+                            }, 2000);
+                        }
+                    }
+                }
+                
+                // Update logs
+                updateScrapingLogs(status.logs || []);
+                
+            } catch (error) {
+                console.error('Error updating scraping status:', error);
+            }
+        }
+
+        function updateScrapingLogs(logs) {
+            const logsDiv = document.getElementById('scrapingLogs');
+            
+            // Show recent logs (last 20)
+            const recentLogs = logs.slice(-20);
+            
+            logsDiv.innerHTML = recentLogs.map(log => {
+                const timestamp = new Date(log.timestamp).toLocaleTimeString();
+                const levelClass = log.level === 'ERROR' ? 'text-danger' : 
+                                  log.level === 'WARNING' ? 'text-warning' : 
+                                  log.level === 'INFO' ? 'text-info' : 'text-muted';
+                
+                return `<div class="mb-1">
+                    <span class="text-muted">[${timestamp}]</span> 
+                    <span class="${levelClass}">${log.level}</span>: 
+                    ${log.message}
+                </div>`;
+            }).join('');
+            
+            // Auto-scroll to bottom
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html> 
