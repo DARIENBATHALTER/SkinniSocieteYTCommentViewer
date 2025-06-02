@@ -1,0 +1,55 @@
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+ytscraper.log
+
+# Database (for local development)
+data/youtube_comments.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.spec
+
+# Temporary files
+temp_exports/
+*.tmp
+*.temp
+
+# Environment variables (keep .env.example)
+.env
+
+# Export files (these are generated)
+videos_export.json
+comments_export.json
+
+# Icon generation files
+icon.iconset/
+*.icns
+
+# Checkpoint files
+checkpoint.json 
