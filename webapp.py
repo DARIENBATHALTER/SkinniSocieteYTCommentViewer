@@ -28,21 +28,26 @@ from ytscraper.config.config_service import ConfigService
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Database configuration
+# Database configuration - Support both SQLite and PostgreSQL
 DATABASE_URL = os.environ.get('DATABASE_URL')
-USE_POSTGRES = DATABASE_URL and POSTGRES_AVAILABLE
+USE_POSTGRES = DATABASE_URL and DATABASE_URL.startswith('postgresql://')
 
 if USE_POSTGRES:
-    logger.info("🐘 Using PostgreSQL database (Heroku)")
-    # Parse DATABASE_URL for PostgreSQL
-    url = urlparse(DATABASE_URL)
-    DB_CONFIG = {
-        'host': url.hostname,
-        'port': url.port,
-        'user': url.username,
-        'password': url.password,
-        'database': url.path[1:]  # Remove leading slash
-    }
+    # PostgreSQL configuration for production (Render)
+    try:
+        url = urlparse(DATABASE_URL)
+        DB_CONFIG = {
+            'host': url.hostname,
+            'database': url.path[1:],
+            'user': url.username,
+            'password': url.password,
+            'port': url.port
+        }
+        logger.info(f"🐘 Using PostgreSQL database: {url.hostname}:{url.port}/{url.path[1:]}")
+        print(f"🐘 PostgreSQL configured for production deployment")
+    except ImportError:
+        logger.error("❌ psycopg2 not available for PostgreSQL connection")
+        raise ImportError("psycopg2-binary required for PostgreSQL support")
 else:
     logger.info("🗃️  Using SQLite database (local)")
     # Determine the base directory for data files
@@ -91,6 +96,70 @@ scraping_status = {
 
 # Medical Medium Channel ID (from the scraped data)
 MEDICAL_MEDIUM_CHANNEL_ID = "UCUORv_qpgmg8N5plVqlYjXg"
+
+def init_postgres_tables():
+    """Initialize PostgreSQL tables if they don't exist"""
+    if not USE_POSTGRES:
+        return
+    
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+        # Create videos table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS videos (
+                video_id VARCHAR(255) PRIMARY KEY,
+                title TEXT,
+                description TEXT,
+                published_at TIMESTAMP,
+                duration VARCHAR(50),
+                view_count BIGINT,
+                like_count BIGINT,
+                comment_count BIGINT,
+                tags TEXT,
+                category_id VARCHAR(50),
+                channel_title VARCHAR(255),
+                thumbnail_url TEXT,
+                language VARCHAR(10)
+            )
+        """)
+        
+        # Create comments table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS comments (
+                comment_id VARCHAR(255) PRIMARY KEY,
+                video_id VARCHAR(255),
+                parent_comment_id VARCHAR(255),
+                author VARCHAR(255),
+                text TEXT,
+                published_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                like_count INTEGER,
+                is_reply BOOLEAN DEFAULT FALSE,
+                channel_owner_liked BOOLEAN DEFAULT FALSE,
+                FOREIGN KEY (video_id) REFERENCES videos (video_id)
+            )
+        """)
+        
+        # Create indexes for better performance
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_comments_video_id ON comments (video_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments (parent_comment_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_published_at ON videos (published_at)")
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        logger.info("✅ PostgreSQL tables initialized successfully")
+        
+    except Exception as e:
+        logger.error(f"❌ Error initializing PostgreSQL tables: {e}")
+        raise
+
+# Initialize database tables
+if USE_POSTGRES:
+    init_postgres_tables()
 
 def get_db():
     """Get database connection"""
