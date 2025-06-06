@@ -1122,8 +1122,8 @@
             const likeCount = comment.like_count || 0;
             const likeDisplay = likeCount >= 1000 ? `${(likeCount/1000).toFixed(1).replace('.0', '')}K` : likeCount.toString();
             
-            // Channel owner liked indicator
-            const heartIcon = comment.channel_owner_liked ? '❤️' : '';
+            // Channel owner liked indicator (only show if explicitly true)
+            const heartIcon = (comment.channel_owner_liked === true || comment.channel_owner_liked === 1) ? '❤️' : '';
             
             // Pre-escape text content for performance (do it once)
             const safeText = (comment.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();

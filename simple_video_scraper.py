@@ -177,7 +177,7 @@ class SkinniVideoScraper:
                         'updated_at': comment.get('updatedAt', comment['publishedAt']),
                         'like_count': comment['likeCount'],
                         'is_reply': 0,
-                        'channel_owner_liked': 1 if comment.get('authorChannelId', {}).get('value') else 0
+                        'channel_owner_liked': 1 if comment.get('likedByChannelOwner', False) else 0
                     }
                     comments.append(comment_data)
                     
@@ -195,7 +195,7 @@ class SkinniVideoScraper:
                                 'updated_at': reply.get('updatedAt', reply['publishedAt']),
                                 'like_count': reply['likeCount'],
                                 'is_reply': 1,
-                                'channel_owner_liked': 1 if reply.get('authorChannelId', {}).get('value') else 0
+                                'channel_owner_liked': 1 if reply.get('likedByChannelOwner', False) else 0
                             }
                             comments.append(reply_data)
                 
