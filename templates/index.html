@@ -467,7 +467,7 @@
         let currentPage = 1;
         let totalPages = 1;
         let currentVideoId = null;
-        let commentsOffset = 0;
+        let currentCommentsPage = 1;
         let commentsLimit = 100; // Increased from 50 to 100 for better UX
         let totalComments = 0;
         let currentFilters = {
@@ -649,7 +649,7 @@
         // Show comments for a selected video
         function showComments(videoId) {
             currentVideoId = videoId;
-            commentsOffset = 0;
+            currentCommentsPage = 1;
             
             // Show comment section, hide video section
             document.getElementById('videoSection').style.display = 'none';
@@ -738,10 +738,11 @@
             if (!append) {
                 commentsList.innerHTML = '';
                 loadMoreBtn.style.display = 'none';
+                currentCommentsPage = 1; // Reset to first page
             }
             
-            // Build URL with filters
-            let url = `/api/videos/${videoId}/comments?offset=${commentsOffset}&limit=${commentsLimit}`;
+            // Build URL with filters using page-based pagination
+            let url = `/api/videos/${videoId}/comments?page=${currentCommentsPage}&per_page=${commentsLimit}`;
             if (currentFilters.search) {
                 url += `&search=${encodeURIComponent(currentFilters.search)}`;
             }
@@ -754,11 +755,21 @@
             if (currentFilters.hasReplies) {
                 url += `&has_replies=true`;
             }
-            // Always include sort_by_likes parameter
-            url += `&sort_by_likes=${currentFilters.sortByLikes}`;
             
-            // Include replies with the parent comments
-            url += `&include_replies=true`;
+            // Map old sort parameter to new API format
+            let sortBy = 'published_at';
+            let order = 'desc';
+            if (currentFilters.sortByLikes === 'desc') {
+                sortBy = 'like_count';
+                order = 'desc';
+            } else if (currentFilters.sortByLikes === 'asc') {
+                sortBy = 'like_count';
+                order = 'asc';
+            } else if (currentFilters.sortByLikes === 'recent') {
+                sortBy = 'published_at';
+                order = 'desc';
+            }
+            url += `&sort=${sortBy}&order=${order}`;
             
             console.log("Loading comments with URL:", url);
             
@@ -770,7 +781,7 @@
                     loadingSpinner.style.display = 'none';
                     
                     // Update total comments and display count in title
-                    totalComments = data.total;
+                    totalComments = data.pagination.total;
                     const commentsHeader = document.querySelector('#commentSection h2');
                     if (commentsHeader) {
                         commentsHeader.textContent = `Comments (${formatNumber(totalComments)})`;
@@ -798,11 +809,11 @@
                         console.log("No comments with replies found in this batch");
                     }
                     
-                    // Update offset for pagination
-                    commentsOffset += data.comments.length;
+                    // Update pagination state
+                    currentCommentsPage++;
                     
-                    // Show/hide load more button
-                    if (commentsOffset < totalComments) {
+                    // Show/hide load more button based on pagination info
+                    if (data.pagination.has_next) {
                         loadMoreBtn.style.display = 'inline-block';
                     } else {
                         loadMoreBtn.style.display = 'none';
@@ -925,8 +936,8 @@
             
             console.log("Applying filters:", currentFilters);
             
-            // Reset offset and load comments with new filters
-            commentsOffset = 0;
+            // Reset page and load comments with new filters
+            currentCommentsPage = 1;
             loadComments(currentVideoId);
         }
 
@@ -948,7 +959,7 @@
             
             // If we're viewing comments, reload them
             if (currentVideoId) {
-                commentsOffset = 0;
+                currentCommentsPage = 1;
                 loadComments(currentVideoId);
             }
         }
@@ -1448,12 +1459,12 @@ ${heartIcon ? `<span style="margin-left: 8px; font-size: 14px;">${heartIcon}</sp
         // Helper function to fetch ALL comments for a video with pagination
         async function fetchAllCommentsForVideo(videoId) {
             let allComments = [];
-            let offset = 0;
-            const limit = 100; // Fetch in batches of 100
+            let page = 1;
+            const per_page = 100; // Fetch in batches of 100
             let hasMore = true;
             
             while (hasMore) {
-                const response = await fetch(`/api/videos/${videoId}/comments?offset=${offset}&limit=${limit}&include_replies=true`);
+                const response = await fetch(`/api/videos/${videoId}/comments?page=${page}&per_page=${per_page}`);
                 const data = await response.json();
                 
                 if (data.comments && data.comments.length > 0) {
@@ -1470,8 +1481,9 @@ ${heartIcon ? `<span style="margin-left: 8px; font-size: 14px;">${heartIcon}</sp
                         }
                     }
                     
-                    offset += data.comments.length;
-                    hasMore = data.comments.length === limit; // Continue if we got a full batch
+                    // Check if there are more pages
+                    hasMore = data.pagination.has_next;
+                    page++;
                 } else {
                     hasMore = false;
                 }
