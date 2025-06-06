@@ -1,11 +1,11 @@
-# Medical Medium YouTube Comment Explorer
+# Skinni Societie Comment Viewer
 
-A powerful web application for browsing, filtering, and exporting YouTube comments from the Medical Medium channel. Export individual comments or entire video collections as professional-looking PNG images that mimic YouTube's comment design.
+A specialized web application for browsing, filtering, and exporting YouTube comments from two specific videos related to Skinni Societie content. Export individual comments or entire collections as professional-looking PNG images that mimic YouTube's comment design.
 
 ## ✨ Features
 
 ### 🔍 **Comment Browsing**
-- Browse 82K+ comments across 598+ videos from the Medical Medium channel
+- Browse 2,000+ comments across 2 targeted videos about skinny culture and influencers
 - Advanced filtering by date, keywords, and like count
 - Sort by most liked, least liked, or most recent
 - Nested reply viewing with parent-child relationships
@@ -14,8 +14,8 @@ A powerful web application for browsing, filtering, and exporting YouTube commen
 ### 📤 **Export Capabilities**
 - **Single Comment Export**: Individual PNG files with authentic YouTube styling
 - **Video Export**: ZIP files containing all comments from a video (chunked for large videos)
-- **Channel Export**: Complete channel export with separate ZIP files per video
-- **Bulk Processing**: Handles 1,600+ comments per video efficiently
+- **Collection Export**: Complete export with separate ZIP files per video
+- **Bulk Processing**: Handles 1,000+ comments per video efficiently
 
 ### 🎨 **Authentic YouTube Styling**
 - Colored circular avatars with user initials
@@ -34,22 +34,23 @@ A powerful web application for browsing, filtering, and exporting YouTube commen
 ## 📁 Project Structure
 
 ```
-YTScraper copy/
-├── webapp.py                 # Flask web server
+SkinnieSocieteScraper/
+├── webapp.py                      # Flask web server
 ├── templates/
-│   └── index.html            # Main web interface
+│   └── index.html                 # Main web interface
 ├── data/
-│   └── youtube_comments.db   # SQLite database with comments
-├── requirements.txt          # Python dependencies
-├── build_standalone.py       # Build script for executable
-└── README.md                # This file
+│   └── youtube_comments.db        # SQLite database with comments
+├── simple_video_scraper.py        # Initial data collection script
+├── requirements.txt               # Python dependencies
+└── README.md                     # This file
 ```
 
-## 🔧 Development Setup
+## 🔧 Setup and Usage
 
 ### Prerequisites
 - Python 3.8 or higher
 - pip (Python package manager)
+- YouTube API key (for initial data collection only)
 
 ### Installation
 1. Clone or download the project
@@ -57,53 +58,42 @@ YTScraper copy/
    ```bash
    pip install -r requirements.txt
    ```
-3. Run the development server:
-   ```bash
-   python webapp.py
-   ```
-4. Open your browser to `http://localhost:9191`
 
-## 📦 Building Standalone Executable
-
-To create a distributable application that doesn't require Python installation:
-
-### Build Process
+### Initial Data Collection (One-time)
+If starting fresh, run the scraper to collect comments:
 ```bash
-python build_standalone.py
+# Set your YouTube API key
+export YOUTUBE_API_KEY="your_api_key_here"
+
+# Run the scraper (one-time only)
+python simple_video_scraper.py
 ```
 
-This will:
-1. Install PyInstaller if needed
-2. Create a launcher script
-3. Bundle Python + Flask + SQLite + your data into a single executable
-4. Output: `dist/YouTubeCommentExplorer.exe` (Windows) or equivalent for Mac/Linux
-
-### What Gets Included
-- ✅ Python runtime
-- ✅ Flask web server
-- ✅ SQLite database with all comments
-- ✅ HTML templates and assets
-- ✅ All dependencies
-- ✅ Auto-launching browser
-
-### Distribution
-The resulting executable:
-- **Single file** - no installation required
-- **Self-contained** - includes all data and dependencies
-- **Cross-platform** - works on Windows, Mac, and Linux
-- **User-friendly** - double-click to run, browser opens automatically
-
-## 💻 Usage
-
-### Starting the Application
-**Development:**
+### Running the Viewer
 ```bash
 python webapp.py
 ```
+Open your browser to `http://localhost:9191`
 
-**Standalone Executable:**
-- Double-click `YouTubeCommentExplorer.exe`
-- Browser opens automatically to the application
+## 🎯 Target Videos
+
+This application focuses on comments from two specific videos:
+
+1. **"TikTok's Skinny-Obsessed Community, "SkinnyTok," Isn't Making You Healthier - It's a Cult..."**
+   - Video ID: vxBMePfysQk
+   - Comments analyzed: ~1,471
+
+2. **"Skinny Influencer" Liv Schmidt's Culty Membership Exposed...**
+   - Video ID: 2JkkwEzHIcQ  
+   - Comments analyzed: ~539
+
+## 💻 Using the Application
+
+### Browsing Comments
+1. **Video Selection**: Choose from the two available videos on the main page
+2. **Filtering**: Use the filter panel to search by keywords, date ranges, or minimum likes
+3. **Sorting**: Sort comments by date, popularity, or author
+4. **Navigation**: Browse through paginated results
 
 ### Exporting Comments
 
@@ -118,9 +108,9 @@ python webapp.py
 3. ZIP file(s) download with all comments as PNGs
 4. Large videos split into multiple ZIP files (500 comments each)
 
-#### Channel Export (All Videos)
+#### Collection Export (All Videos)
 1. From the main video list page
-2. Click "Export All Channel Comments"
+2. Click "Export All Comments"
 3. Individual ZIP files download for each video
 4. Progress tracking shows overall and per-video progress
 
@@ -131,36 +121,23 @@ python webapp.py
 
 Example:
 ```
-Celery_Juice_Can_Save_Your_Life_sinisterking6009_Exactly_my_thoughts_2025-01-15_14-30.png
+TikToks_Skinny_Obsessed_Community_user123_Great_analysis_2025-01-15_14-30.png
 ```
 
-## 🎯 Technical Implementation
+## 🎨 Red Theme
 
-### Client-Side PNG Generation
-- Uses `html2canvas` library for browser-based image generation
-- No server-side image processing required
-- High-quality 2x scale factor for crisp images
-- Handles fonts, colors, and complex layouts
-
-### Chunked Processing
-- Breaks large exports into 500-comment chunks
-- Prevents browser memory issues
-- Maintains file naming consistency
-- Real-time progress tracking
-
-### Database Schema
-```sql
-videos (video_id, title, published_at, view_count, like_count, comment_count)
-comments (comment_id, video_id, parent_comment_id, author, text, published_at, like_count, is_reply)
-```
+The application features a red color scheme to match the Skinni Societie branding:
+- Primary accent color: #DC3545 (Bootstrap red)
+- Icon color: Red play button symbol
+- Maintains clean, professional appearance
 
 ## 🚀 Performance
 
-### Benchmarks
-- **Single comment export**: ~2-3 seconds
-- **Video export (1,600 comments)**: ~45-60 minutes
-- **Channel export (82K comments)**: ~24-48 hours
-- **Memory usage**: <500MB for largest exports
+### Current Dataset
+- **Videos**: 2 (targeted content)
+- **Comments**: 2,000+ total
+- **Export speed**: ~2-3 seconds per comment
+- **Memory usage**: <200MB for typical operations
 
 ### Optimizations
 - Chunked processing prevents memory overflow
@@ -168,7 +145,21 @@ comments (comment_id, video_id, parent_comment_id, author, text, published_at, l
 - Progress tracking provides user feedback
 - Error handling ensures completion despite individual failures
 
-## 🛠️ Troubleshooting
+## 🛠️ Technical Implementation
+
+### Client-Side PNG Generation
+- Uses `html2canvas` library for browser-based image generation
+- No server-side image processing required
+- High-quality 2x scale factor for crisp images
+- Handles fonts, colors, and complex layouts
+
+### Database Schema
+```sql
+videos (video_id, title, published_at, view_count, like_count, comment_count)
+comments (comment_id, video_id, parent_comment_id, author, text, published_at, like_count, is_reply)
+```
+
+## 🔧 Troubleshooting
 
 ### Common Issues
 
@@ -179,12 +170,10 @@ pkill -f "python webapp.py"
 # Or change port in webapp.py
 ```
 
-**Build fails on PyInstaller:**
+**Missing database:**
 ```bash
-# Install/update PyInstaller
-pip install --upgrade pyinstaller
-# Ensure all dependencies installed
-pip install -r requirements.txt
+# Run the scraper to collect data
+python simple_video_scraper.py
 ```
 
 **Large exports fail:**
@@ -195,47 +184,16 @@ pip install -r requirements.txt
 ## 📊 Data Statistics
 
 Current database contains:
-- **Videos**: 598 (Medical Medium channel)
-- **Comments**: 82,000+ total
-- **Date Range**: Multiple years of content
-- **Size**: ~50MB SQLite database
+- **Videos**: 2 (Skinni Societie related content)
+- **Comments**: 2,000+ total
+- **Focus**: Analysis of skinny culture discussions and community responses
 
-## 🔒 Privacy & Data
+## 🎯 Purpose
 
-- All data is locally stored (SQLite database)
-- No external API calls during export
-- Comments were previously scraped using YouTube API
-- User data never transmitted outside local application
+This tool is designed for researchers, content creators, and analysts interested in understanding online discussions about:
+- Skinny culture and "SkinnyTok" communities
+- Influencer accountability and cult-like behaviors
+- Body image discussions in social media
+- Community responses to health/wellness content
 
-## 🤝 Contributing
-
-This is a specialized tool for Medical Medium comment analysis. For modifications:
-
-1. Fork the repository
-2. Make changes to `webapp.py` or `templates/index.html`
-3. Test with development setup
-4. Build new executable with `build_standalone.py`
-
-## 📋 Dependencies
-
-Core requirements:
-```
-flask>=2.0.0
-sqlite3 (built-in)
-html2canvas (CDN)
-bootstrap (CDN)
-jszip (CDN)
-```
-
-Build requirements:
-```
-pyinstaller>=5.0
-```
-
-## 📝 License
-
-This project is for educational and research purposes. YouTube content remains property of respective creators.
-
----
-
-**Built with ❤️ for the Medical Medium community** # MMYouTubeCommentExplorer
+**Built for focused analysis of skinny culture discourse** 🔍✨

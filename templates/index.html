@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Medium YouTube Comment Explorer</title>
+    <title>Skinni Societie Comment Viewer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,10 +31,10 @@
             display: flex;
             align-items: center;
         }
-        .titlebar .medical-symbol {
+        .titlebar .skinni-symbol {
             font-size: 2.8rem;
             margin-right: 10px;
-            color: #FFD700;
+            color: #DC3545;
         }
         .video-card {
             transition: transform 0.3s;
@@ -227,7 +227,7 @@
     <div class="titlebar">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
-                <h1><i class="bi bi-play-fill medical-symbol"></i> Medical Medium YouTube Comment Explorer</h1>
+                <h1><i class="bi bi-play-fill skinni-symbol"></i> Skinni Societie Comment Viewer</h1>
                 <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#aboutModal">
                     <i class="bi bi-question-circle"></i>
                 </button>
@@ -269,11 +269,8 @@
                     </div>
                     <div class="row mt-3">
                         <div class="col-12 text-end">
-                            <button class="btn btn-update me-2" onclick="startScraping()" id="scrapeBtn">
-                                <i class="fas fa-sync-alt"></i> Fetch New Videos / Comments
-                            </button>
                             <button class="btn btn-success" onclick="exportAllChannelComments()">
-                                <i class="bi bi-download"></i> Export All Channel Comments
+                                <i class="bi bi-download"></i> Export All Comments
                             </button>
                         </div>
                     </div>
@@ -390,7 +387,7 @@
         </main>
 
         <footer class="text-center text-muted mt-5 pt-4 pb-4 border-top">
-            <p class="mb-0">&copy; 2023 Medical Medium YouTube Comment Explorer</p>
+                                <p class="mb-0">&copy; 2025 Skinni Societie Comment Viewer</p>
         </footer>
     </div>
 
@@ -430,33 +427,7 @@
         </div>
     </div>
 
-    <!-- Scraping Progress Tooltip -->
-    <div id="scrapingProgress" class="export-progress" style="display: none; bottom: 120px;">
-        <button type="button" class="close-progress" onclick="closeScrapingTracker()">&times;</button>
-        <div id="scrapingContent">
-            <div class="d-flex align-items-center mb-2">
-                <i class="fas fa-sync-alt me-2"></i>
-                <strong id="scrapingTitle">Updating Comments...</strong>
-            </div>
-            <div id="scrapingStatus">
-                <div class="progress mb-2">
-                    <div id="scrapingProgressBar" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
-                </div>
-                <div class="progress-text mb-2" id="scrapingStatusText">Initializing...</div>
-                <div class="d-flex justify-content-between mb-2">
-                    <button class="btn btn-sm btn-danger" onclick="stopScraping()" id="stopScrapeBtn">
-                        <i class="bi bi-stop-fill"></i> Stop
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleScrapingLogs()" id="toggleLogsBtn">
-                        <i class="bi bi-terminal"></i> Show Logs
-                    </button>
-                </div>
-            </div>
-            <div id="scrapingLogs" style="display: none; max-height: 200px; overflow-y: auto; background: #f8f9fa; border-radius: 4px; padding: 8px; font-family: monospace; font-size: 0.8rem;">
-                <!-- Logs will appear here -->
-            </div>
-        </div>
-    </div>
+
 
     <!-- Hidden area for rendering comments as PNG -->
     <div id="commentRenderArea" style="position: absolute; left: -9999px; top: -9999px; background: white; width: 600px; padding: 20px; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;">
@@ -541,8 +512,7 @@
                 sortByLikes: 'desc'
             };
             
-            // Check if scraping is active
-            updateScrapingStatus();
+            // Scraping functionality removed
         });
 
         // Load videos with pagination
@@ -614,7 +584,7 @@
             col.innerHTML = `
                 <div class="card video-card" data-video-id="${video.video_id}">
                     <div class="video-thumbnail">
-                        <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}">
+                        <img src="${video.thumbnail_url}" class="card-img-top" alt="${video.title}">
                     </div>
                     <div class="card-body">
                         <h5 class="card-title video-title">${video.title}</h5>
@@ -730,7 +700,7 @@
                         <div class="card">
                             <div class="row g-0">
                                 <div class="col-md-4">
-                                    <img src="${video.thumbnail}" class="img-fluid rounded-start" alt="${video.title}">
+                                    <img src="${video.thumbnail_url}" class="img-fluid rounded-start" alt="${video.title}">
                                 </div>
                                 <div class="col-md-8">
                                     <div class="card-body">
@@ -1894,170 +1864,7 @@ ${heartIcon ? `<span style="margin-left: 8px; font-size: 14px;">${heartIcon}</sp
             }, 5000);
         }
 
-        // Scraping functionality
-        let scrapingPolling = null;
-
-        async function startScraping() {
-            try {
-                const response = await fetch('/api/scraper/start', { method: 'POST' });
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showToast('Comment update started!', 'success');
-                    showScrapingTracker();
-                    startScrapingPolling();
-                    document.getElementById('scrapeBtn').disabled = true;
-                } else {
-                    showToast(data.error || 'Failed to start update', 'error');
-                }
-            } catch (error) {
-                showToast('Error starting update: ' + error.message, 'error');
-            }
-        }
-
-        async function stopScraping() {
-            try {
-                const response = await fetch('/api/scraper/stop', { method: 'POST' });
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showToast('Comment update stopped', 'info');
-                    stopScrapingPolling();
-                    document.getElementById('scrapeBtn').disabled = false;
-                } else {
-                    showToast(data.error || 'Failed to stop update', 'error');
-                }
-            } catch (error) {
-                showToast('Error stopping update: ' + error.message, 'error');
-            }
-        }
-
-        function showScrapingTracker() {
-            const scrapingDiv = document.getElementById('scrapingProgress');
-            scrapingDiv.style.display = 'block';
-        }
-
-        function closeScrapingTracker() {
-            const scrapingDiv = document.getElementById('scrapingProgress');
-            scrapingDiv.style.display = 'none';
-            stopScrapingPolling();
-            document.getElementById('scrapeBtn').disabled = false;
-        }
-
-        function toggleScrapingLogs() {
-            const logsDiv = document.getElementById('scrapingLogs');
-            const toggleBtn = document.getElementById('toggleLogsBtn');
-            
-            if (logsDiv.style.display === 'none') {
-                logsDiv.style.display = 'block';
-                toggleBtn.innerHTML = '<i class="bi bi-terminal"></i> Hide Logs';
-            } else {
-                logsDiv.style.display = 'none';
-                toggleBtn.innerHTML = '<i class="bi bi-terminal"></i> Show Logs';
-            }
-        }
-
-        function startScrapingPolling() {
-            scrapingPolling = setInterval(updateScrapingStatus, 2000); // Poll every 2 seconds
-            updateScrapingStatus(); // Initial update
-        }
-
-        function stopScrapingPolling() {
-            if (scrapingPolling) {
-                clearInterval(scrapingPolling);
-                scrapingPolling = null;
-            }
-        }
-
-        async function updateScrapingStatus() {
-            try {
-                const response = await fetch('/api/scraper/status');
-                const status = await response.json();
-                
-                // Update progress bar
-                const progressBar = document.getElementById('scrapingProgressBar');
-                const statusText = document.getElementById('scrapingStatusText');
-                
-                if (status.active) {
-                    const progress = status.progress || 0;
-                    progressBar.style.width = progress + '%';
-                    progressBar.className = 'progress-bar bg-info';
-                    
-                    // Enhanced status text with percentages and counts
-                    let statusDisplay = status.current_task || 'Processing...';
-                    
-                    // Add percentage if we have progress data
-                    if (status.total && status.current_video) {
-                        statusDisplay = `${status.current_video}/${status.total} videos with new comments (${progress}%)`;
-                        if (status.current_task && status.current_task.includes('video')) {
-                            statusDisplay += `\n${status.current_task}`;
-                        }
-                    } else if (status.current_task) {
-                        statusDisplay = status.current_task;
-                    }
-                    
-                    statusText.innerHTML = statusDisplay.replace(/\n/g, '<br>');
-                } else {
-                    // Scraping finished
-                    stopScrapingPolling();
-                    document.getElementById('scrapeBtn').disabled = false;
-                    
-                    if (status.error) {
-                        progressBar.style.width = '100%';
-                        progressBar.className = 'progress-bar bg-danger';
-                        statusText.textContent = status.current_task || 'Update failed';
-                        // Only show error toast if we were actively polling
-                        if (scrapingPolling) {
-                            showToast('Update failed: ' + status.error, 'error');
-                        }
-                    } else {
-                        progressBar.style.width = '100%';
-                        progressBar.className = 'progress-bar bg-success';
-                        statusText.innerHTML = status.current_task || 'Update completed!';
-                        // Only show success toast if we were actively polling (not on page load)
-                        if (scrapingPolling) {
-                            showToast('Comment update completed successfully!', 'success');
-                        }
-                        
-                        // Refresh the video list to show new content only if we were polling
-                        if (scrapingPolling) {
-                            setTimeout(() => {
-                                loadVideos(currentPage);
-                            }, 2000);
-                        }
-                    }
-                }
-                
-                // Update logs
-                updateScrapingLogs(status.logs || []);
-                
-            } catch (error) {
-                console.error('Error updating scraping status:', error);
-            }
-        }
-
-        function updateScrapingLogs(logs) {
-            const logsDiv = document.getElementById('scrapingLogs');
-            
-            // Show recent logs (last 20)
-            const recentLogs = logs.slice(-20);
-            
-            logsDiv.innerHTML = recentLogs.map(log => {
-                const timestamp = new Date(log.timestamp).toLocaleTimeString();
-                const levelClass = log.level === 'ERROR' ? 'text-danger' : 
-                                  log.level === 'WARNING' ? 'text-warning' : 
-                                  log.level === 'INFO' ? 'text-info' : 'text-muted';
-                
-                return `<div class="mb-1">
-                    <span class="text-muted">[${timestamp}]</span> 
-                    <span class="${levelClass}">${log.level}</span>: 
-                    ${log.message}
-                </div>`;
-            }).join('');
-            
-            // Auto-scroll to bottom
-            logsDiv.scrollTop = logsDiv.scrollHeight;
-        }
+        // Scraping functionality removed - this is now a viewing-only application
     </script>
 </body>
 </html> 
