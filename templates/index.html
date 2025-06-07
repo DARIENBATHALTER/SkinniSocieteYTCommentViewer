@@ -863,7 +863,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <div class="comment-author">
-                            ${comment.author} ${channelOwnerLiked}
+                            ${cleanCommentText(comment.author)} ${channelOwnerLiked}
                         </div>
                         <div class="d-flex align-items-center">
                             <div class="comment-date">${formattedDate}</div>
@@ -872,7 +872,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="card-text comment-text">${comment.text}</p>
+                    <p class="card-text comment-text">${cleanCommentText(comment.text)}</p>
                     <div class="text-muted">
                         <i class="bi bi-hand-thumbs-up"></i> ${comment.like_count}
                         ${badges}
@@ -1094,6 +1094,30 @@
             });
         }
 
+        // Helper function to clean and decode comment text
+        function cleanCommentText(text) {
+            if (!text) return '';
+            
+            // First decode HTML entities using a temporary DOM element
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = text;
+            let decodedText = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // Clean up HTML tags (like <br>, <p>, etc.)
+            decodedText = decodedText.replace(/<[^>]*>/g, ' ');
+            
+            // Clean up extra whitespace
+            decodedText = decodedText.replace(/\s+/g, ' ').trim();
+            
+            // Now properly escape for HTML display
+            return decodedText
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function generateCommentHTML(comment, videoTitle = '') {
             // Performance optimization: cache color calculation
             const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F39C12'];
@@ -1125,10 +1149,10 @@
             // Channel owner liked indicator (only show if explicitly true)
             const heartIcon = (comment.channel_owner_liked === true || comment.channel_owner_liked === 1) ? '❤️' : '';
             
-            // Pre-escape text content for performance (do it once)
-            const safeText = (comment.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();
-            const safeAuthorEscaped = safeAuthor.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            const safeVideoTitle = videoTitle ? videoTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+            // Clean and properly escape text content
+            const safeText = cleanCommentText(comment.text);
+            const safeAuthorEscaped = cleanCommentText(safeAuthor);
+            const safeVideoTitle = videoTitle ? cleanCommentText(videoTitle) : '';
             
             // Return optimized HTML with minimal nested elements
             return `<div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #ffffff; width: 560px; box-sizing: border-box;">
